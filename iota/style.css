@@ -1,0 +1,192 @@
+@charset "UTF-8";
+
+html{
+  text-align:center;
+}
+
+body{
+	background-color: #FFFFFF;
+	font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+	font-size: 14pt;
+}
+
+.stdin{
+	width: 95%;
+	padding: 8px 0px;
+	line-height: 24px;
+	font-size: 16px;
+	font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+	-webkit-appearance: none;
+}
+
+.stdbtn {
+    border: none;
+    color: #007AFF;
+	background-color: #FFFFFF;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16pt;
+	-webkit-appearance: none;
+}
+
+.addr{
+	word-break: break-all;
+}
+
+.info{
+	font-size:12pt;
+}
+
+.txtAddr{
+	padding: 5px 0px;
+	line-height: 12pt!important;
+	font-size:10pt!important;
+	height: 36pt;
+}
+
+/* transform: rotate(-20deg);*/
+
+.menuBtn{
+	background-color: rgba(255, 255, 255, 0);
+	color: #08032d;
+	border-radius: 0px;
+	border-bottom: dotted 1px;
+}
+
+.txList{
+	text-align: left;
+	border-radius: 0px;
+	border-bottom: dotted 1px;
+	font-size:12pt;
+}
+
+.txListTypeinput{
+	color: green;
+}
+
+.txListTypeoutput{
+	color: red;
+}
+
+.txListValue{
+	font-weight: bold;
+}
+
+.txListDate{
+	float:right;
+	text-align:right;
+}
+
+.txListconf{
+	font-style: italic;
+}
+
+.txListunconf{
+	font-style: italic;
+	color: red;
+}
+
+div{
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+}
+
+#divMainMenu{
+	width: 0px;
+	float:left;
+	background-color: #FFFFFF;
+	position: fixed;
+	top:42px;
+	left:0px;
+	bottom:0px;
+	transition: width 0.2s ease-in-out;
+}
+
+#divTx{
+	overflow: scroll;
+}
+
+#divAbout{
+	overflow: scroll;
+}
+
+#warnOutputPending{
+	color: red;
+}
+
+#balance{
+	float: right;
+	padding-right: 5px;
+	font-weight: bold;
+	line-height: 40px;
+	font-size: 16pt;
+	color: #AAAAAA;
+}
+
+#infoLine{
+	height: 40px;
+	width: 100%;
+	border-bottom: 2px solid #AAAAAA;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	background-color: #FFFFFF;
+}
+
+#infoLinePadding{
+	height: 40px;
+	width: 100%;
+}
+
+#btnMainMenu{
+	height: 40px;
+	width: 40px;
+	float:left;
+	boarder-radius: 0px;
+	background-repeat: no-repeat;
+	background-size: 34px 34px;
+	background-position: center;
+	transform: rotate(0deg);
+	transition: transform 0.2s ease-in-out;
+	border-radius: 19px;
+ 	background-image: url("img/btnmenu.png");
+}
+
+#divLoginLoading{
+	height: 100%;
+	width: 100%;
+}
+
+
+#imgLoading{
+	display: inline-block;
+	width: 45%;
+}
+
+#qrseed{
+	width: 100%;
+}
+
+#qrRecieve{
+	width: 100%;
+}
+
+#txtCustomNode{
+}
+
+.mainButton{
+	font-size:18pt;
+}
+
+.divMainButton{
+	border: solid 1px; 
+}
+
+
+
+
+
+
+

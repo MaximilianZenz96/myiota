@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>myota - IOTA wallet</title>
+
+<link rel="stylesheet" type="text/css" href="style.css">
+
+<script type="application/javascript" src="iota.min.js"></script>
+<script type="application/javascript" src="jquery.js"></script>
+<script type="application/javascript" src="jquery.qrcode.min.js"></script>
+<script type="application/javascript" src="aes.js"></script>
+<script type="application/javascript" src="md5.js"></script>
+<script type="application/javascript" src="jquery.cookie.js"></script>
+<script type="application/javascript" src="app.js"></script>
+
+<script type="text/javascript" src="qrlib/grid.js"></script>
+<script type="text/javascript" src="qrlib/version.js"></script>
+<script type="text/javascript" src="qrlib/detector.js"></script>
+<script type="text/javascript" src="qrlib/formatinf.js"></script>
+<script type="text/javascript" src="qrlib/errorlevel.js"></script>
+<script type="text/javascript" src="qrlib/bitmat.js"></script>
+<script type="text/javascript" src="qrlib/datablock.js"></script>
+<script type="text/javascript" src="qrlib/bmparser.js"></script>
+<script type="text/javascript" src="qrlib/datamask.js"></script>
+<script type="text/javascript" src="qrlib/rsdecoder.js"></script>
+<script type="text/javascript" src="qrlib/gf256poly.js"></script>
+<script type="text/javascript" src="qrlib/gf256.js"></script>
+<script type="text/javascript" src="qrlib/decoder.js"></script>
+<script type="text/javascript" src="qrlib/qrcode.js"></script>
+<script type="text/javascript" src="qrlib/findpat.js"></script>
+<script type="text/javascript" src="qrlib/alignpat.js"></script>
+<script type="text/javascript" src="qrlib/databr.js"></script>
+
+<script type="application/javascript">
+
+
+
+/* GLOBAL VARS */
+var seed = "";
+var iota;
+
+/* INIT PAGE */
+$( document ).ready(function() {
+
+	initIota();
+
+	console.log("IOTA ready. Vers. " + iota.version);
+
+	$('#btnCreateSeed').click(function(){ $('#txtSeed').val(getNewSeed()); });
+	$('#btnLogin').click(askSafeSeed);
+	$('#btnEncSeed').click(encSeed);
+	$('#btnSetSeedContinue').click(function(){ showTab('#divShowSeed'); });
+	$('#btnShowSeedContinue').click(reqLogin);
+	$('#btnSkipSafeSeed').click(reqLogin);
+	$('#btnLogInPw').click(function(){ if(globDataDec($('#logInPw').val())) reqLogin(); });
+	$('#btnDelSeed').click(logout);
+	$('#btnShowSend').click(showSend);
+	$('#btnShowReceive').click(showReceive);
+	$('#btnCloseReceive').click(showMain);
+	$('#btnCloseSend').click(showMain);
+	$('#btnSendTx').click(sendTx);
+	$('#btnMainMenu').click(toggleMenu);
+	$('#btnSelectRestoreWallet').click(restoreWallet);	
+	$('#btnCloseAbout').click(showLastTab);	
+	$('#btnCloseTx').click(showLastTab);	
+	$('#btnCloseNodeSetup').click(showLastTab);	
+	$('#btnSetNode').click(function(){ setProviderCookie(); initIota(); });
+
+	/* MENU */
+	$('#btnShowSeed').click(function(){ toggleMenu(); if(confirm("WARNING\nDon't let anybody get access to your seed! Your funds can be spent without any additional knowledge. Write it down as last resource, but always use the encrypted version (QR-Code + password) when possible.")){ alert(seed); }; });
+	$('#btnRefreshBalance').click(function(){ toggleMenu(); getBalance(); });
+	$('#btnShowBackupPage').click(function(){ toggleMenu(); showTab('#divShowSeed'); });	
+	$('#btnShowAbout').click(function(){ toggleMenu(); showTab('#divAbout'); });	
+	$('#btnHome').click(function(){ toggleMenu(); showTab('#divMain'); });		
+	$('#btnShowTxList').click(function(){ toggleMenu(); showTab('#divTx'); });
+	$('#btnLogout').click(function(){ toggleMenu(); logout(); });	
+	$('#btnNodeInfo').click(function(){ toggleMenu(); showTab('#divNodeInfo'); });
+	
+  	$('#btnScanQR').click(function(){ scantofield = '#txtSendAddr';
+		BridgeCommander.call("scanQR", "")
+        	.then(function(result) { console.log(result); })
+        	.catch(function(error) { console.log(error); }); 
+	});
+
+	$('#btnCypToClipb').click(function(){ BridgeCommander.call("copyToClipboard", $('#currUnusedAddr').val())
+        	.then(function(result) { console.log(result); })
+        	.catch(function(error) { console.log(error); }); 
+	});
+
+	setInterval(checkscaninput, 100);
+
+	$('#seedpw2').keyup(checkpw);
+
+	$("#fileEncWalletQr").change(function() {
+	  scanfile("fileEncWalletQr", function(data){ if(setEncWallet(data)) { showTab('#divLoginPw'); } });
+	});
+	
+	$('#warnOutputPending').css('display', 'none');
+	$('#txtCustomNode').css('display', 'none');
+	$('#selectNode').change(function() {
+		if($('#selectNode').val() == 'custom')
+		{
+			$('#txtCustomNode').css('display', '');
+		}else{
+			$('#txtCustomNode').css('display', 'none');
+		}
+	});
+
+	if($.cookie('globData')){
+		showTab('#divLoginPw');
+	}else{
+		showTab('#divLogin');
+	}
+
+});
+
+</script>
+</head>
+<body>
+
+<div id="infoLine">
+	<input type="button" id="btnMainMenu" class="stdin stdbtn"></input>
+	<div id="balance"></div>
+</div> <!-- infoLine -->
+
+<div id="infoLinePadding">&nbsp;</div>
+
+<div id="divMainMenu">
+	<form><br>
+		<input type="button" id="btnHome" class="stdin stdbtn menuBtn" value="home"></input>
+		<input type="button" id="btnRefreshBalance" class="stdin stdbtn menuBtn" value="refresh"></input>
+		<input type="button" id="btnShowTxList" class="stdin stdbtn menuBtn" value="transactions"></input>
+		<input type="button" id="btnShowSeed" class="stdin stdbtn menuBtn" value="show seed"></input>
+		<input type="button" id="btnShowBackupPage" class="stdin stdbtn menuBtn" value="show backup code"></input>
+		<input type="button" id="btnNodeInfo" class="stdin stdbtn menuBtn" value="connection setup"></input>
+		<input type="button" id="btnShowAbout" class="stdin stdbtn menuBtn" value="about myiota"></input>
+		<input type="button" id="btnLogout" class="stdin stdbtn menuBtn" value="logout"></input>
+	</form>
+</div> <!-- divMainMenu -->
+
+<div id="divNodeInfo">
+	<h2>Select a node:</h2>
+	<form>
+	<select type="select" id="selectNode" class="stdin stdbtn divMainButton">
+		<option value="http://iotastyria.ddns.net:14265" selected="selected">http://iotastyria.ddns.net:14265</option>
+		<option value="https://nodes.iota.cafe:443">https://nodes.iota.cafe:443 (No POW Server)</option>
+		<option value="custom">Custom</option><br>
+	</select>
+	<input type="text" id="txtCustomNode" class="stdin"></input>
+	<input type="button" id="btnSetNode" class="stdin stdbtn mainButton" value="select node"></input>
+	<input type="button" id="btnCloseNodeSetup" class="stdin stdbtn" value="Back"></input>
+	<form>
+	<h4>Connection status:</h4>
+	<p id="pConStat"></p>
+</div>
+
+<div id="divLogin">
+	<h2>Login</h2>
+	<form>
+		Your seed:<br>
+		<input type="button" id="btnCreateSeed" class="stdin stdbtn" value="Create Seed"></input><br>
+		<textarea id="txtSeed" class="stdin txtAddr"></textarea>
+		<input type="button" id="btnLogin" class="stdin stdbtn mainButton" value="Login"></input><br>
+		<input type="button" id="btnSelectRestoreWallet" class="stdin stdbtn" value="Restore Wallet / Import Seed"></input>
+		<input type="file" accept="image/*" id="fileEncWalletQr" style="display:none"></input><br>
+	</form>
+	<p class="info">When creating a new seed, please change a few letters manually to increase the security. Remember: everyone who holds your seed can spend your IOTAs!<br>A Seed may only contain the CAPITAL Letters [A-Z] and 9.</p>
+</div>	<!-- divLogin -->
+
+<div id="divSafeLogin">
+	<h2>Remember seed</h2>
+	<form>
+		Select password:<br>
+		<input type="password" id="seedpw1" class="stdin"></input><br>
+		Retype password:<br>
+		<input type="password" id="seedpw2" class="stdin"></input><br>
+		<br>
+		<input type="button" id="btnEncSeed" class="stdin stdbtn mainButton" value="Save"></input><br>
+		<input type="button" id="btnSetSeedContinue" class="stdin stdbtn mainButton" value="Continue"></input><br><br>
+		<input type="button" id="btnSkipSafeSeed" class="stdin stdbtn" value="Skip"></input>
+	</form>
+</div>  <!-- divSafeLogin -->
+
+<div id="divShowSeed">
+	<h4>Account data (encrypted):</h4>
+	<div id="qrseed"></div><br>
+	Please screenshot and print this QR-Code and remember your password!
+	<input type="button" id="btnShowSeedContinue" class="stdin stdbtn mainButton" value="Continue"></input><br>
+</div>
+
+<div id="divLoginPw">
+	<h2>Seed decrypt</h2>
+	<form>
+		<br>Password:<br>
+		<input type="password" id="logInPw" class="stdin"></input><br><br>
+		<input type="button" id="btnLogInPw" class="stdin stdbtn mainButton" value="Log in"></input>
+		<br><br><br>
+		<input type="button" id="btnDelSeed" class="stdin stdbtn" value="Delete Seed"></input>
+	</form>
+</div>
+
+<div id="divLoginLoading">
+	<br><br><br>
+	<img src="img/logo.png" id="imgLoading" />
+	<h4>Loading ... </h4>
+	<p class="info"><b>Please keep your seed safe.</b><br>Only with your seed you are able to withdraw your money.</p>
+</div>  <!-- divLoginLoading -->
+
+<div id="divMain">
+	<h2>myiota wallet</h2><br><br>
+	<input type="button" id="btnShowReceive" class="stdin stdbtn mainButton divMainButton" value="receive money"></input><br><br>
+	<input type="button" id="btnShowSend" class="stdin stdbtn mainButton divMainButton" value="send money"></input><br>
+	<br>
+</div>	<!-- divMain -->
+
+<div id="divTx">
+	<input type="button" id="btnCloseTx" class="stdin stdbtn" value="Back"></input>
+	<div id="divTxList"></div>
+</div>	<!-- divTx -->
+
+<div id="divReceive">
+	<p>
+		<b>receive money</b><br>
+		<div id="qrRecieve"></div>
+		<textarea id="currUnusedAddr" class="stdin txtAddr"></textarea><br>
+		<input type="button" id="btnCypToClipb" class="stdin stdbtn" value="Copy To Clipboard"></input>
+		<input type="button" id="btnCloseReceive" class="stdin stdbtn" value="Back"></input><br>
+	</p>
+</div> <!-- divReceive -->
+
+<div id="divSend">
+	<h4>send money</h4>
+	<h3 id="warnOutputPending">Output pending!</h3>
+	<form>
+	Amount to send:<br>
+	<input type="number" id="valToSend" class="stdin" style="width:79%"></input>
+	<select id="sendSelectUnit" class="stdin" style="width:14%; border:solid 1px;">
+		<option value="i" selected="selected">&nbsp;i</option>
+		<option value="Ki">&nbsp;Ki</option>
+		<option value="Mi">&nbsp;Mi</option>
+		<option value="Gi">&nbsp;Gi</option>
+		<option value="Ti">&nbsp;Ti</option>
+		<option value="Pi">&nbsp;Pi</option>
+	</select><br>
+	Receiver Address: <br>
+	<textarea id="txtSendAddr" class="stdin txtAddr"></textarea>
+	<input type="button" id="btnScanQR" class="stdin stdbtn" value="Scan QR Code"></input>
+	<input type="button" id="btnSendTx" class="stdin stdbtn mainButton" value="Send"></input>
+	<br><br>
+	<input type="button" id="btnCloseSend" class="stdin stdbtn" value="Back"></input><br>
+	</form>
+</div>	<!-- divSend -->
+
+<div id="divAbout">
+	<h2>myiota</h2>
+	<h4>by mgames.cc</h4>
+	<p>myiota is a light wallet for the IOTA cryptocurrency.<br>
+	It is utilizing <a href="https://github.com/iotaledger/iota.lib.js/">iota.lib.js</a>,
+	the original iota javascript library. </p>
+	<p><b>Data security</b><br>
+	This app and all used libraries are delivered within the package downloaded from the App Store.
+	Also the seed or wallet data is never transferred anywhere. It is stored in a local cookie and
+	processed only by local files. Thus neither mgames nor apple or any other party except the user
+	of the software himself can protect his seed from loss. If seed and/or backup wallet file is lost,
+	also the funds of the seed cannot be accessed, thus it is of utmost importance that it is backed up
+	at a safe place.<br>
+	The data transferred to the public nodes does not contain any information that can be used to
+	gain access to the funds and through delivering the software in package it is secured that no malware is 
+	added.<br>
+	But as this software and also the iota project including the imported iota.lib.js library is still in (early)
+	BETA realease, it cannot be guaranteed that there are no fatal errors in the code. Please try with small quantities 
+	after every bigger system or software update / changes and report any bug you encounter.</p>
+	<p><b>INFO: Proof Of Work</b><br>In order to be accepted by the network, for IOTA transaction
+	there has to be done some 'work' by the sender. Because of performance and battery life the POW is done
+	at the remote full node to which this client is connected. This app can be connected to every full node
+	available, but the person who keeps the node can determine whether it may do the POW or only accepts transactions
+	where the thin client has already done it.</p>
+	<p><b>Libraries:</b><br>
+	Following libraries are used in this application:<br>
+	<a href="https://github.com/iotaledger/iota.lib.js/">iota.lib.js</a>(<a href="https://github.com/iotaledger/iota.lib.js/blob/master/LICENSE">License</a>)<br>
+	<a href="https://code.google.com/archive/p/crypto-js/">Crypto-JS</a>(<a href="https://opensource.org/licenses/BSD-3-Clause">License</a>)<br>
+	<a href="https://jquery.com/">jQuery</a>(<a href="https://tldrlegal.com/license/mit-license">License</a>)<br>
+	<a href="https://github.com/carhartl/jquery-cookie">jQuery-cookie</a>(<a href="https://github.com/carhartl/jquery-cookie/blob/master/MIT-LICENSE.txt">License</a>)<br>
+	<a href="https://github.com/jeromeetienne/jquery-qrcode">jQuery-qrcode</a>(<a href="https://github.com/jeromeetienne/jquery-qrcode/blob/master/MIT-LICENSE.txt">License</a>)<br>
+	<a href="https://github.com/LazarSoft/jsqrcode">jsqrcode</a>(<a href="https://github.com/LazarSoft/jsqrcode/blob/master/COPYING">License</a>)<br>
+	</p>
+	<input type="button" id="btnCloseAbout" class="stdin stdbtn mainButton" value="Back"></input>
+</div>
+
+<textarea id="txtToAddr" style="display:none"></textarea>
+
+</body>
+</html>
